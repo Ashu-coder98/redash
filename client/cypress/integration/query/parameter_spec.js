@@ -26,8 +26,7 @@ describe('Parameter', () => {
         .find('input')
         .type('Redash');
 
-      cy.getByTestId('ParameterName-test-parameter')
-        .contains('Apply')
+      cy.getByTestId('ParameterApplyButton')
         .click();
 
       cy.getByTestId('DynamicTable')
@@ -63,8 +62,7 @@ describe('Parameter', () => {
         .find('input')
         .type('{selectall}42');
 
-      cy.getByTestId('ParameterName-test-parameter')
-        .contains('Apply')
+      cy.getByTestId('ParameterApplyButton')
         .click();
 
       cy.getByTestId('DynamicTable')
@@ -104,6 +102,9 @@ describe('Parameter', () => {
         .click();
 
       cy.contains('li.ant-select-dropdown-menu-item', 'value1')
+        .click();
+
+      cy.getByTestId('ParameterApplyButton')
         .click();
 
       cy.getByTestId('DynamicTable')
@@ -150,6 +151,9 @@ describe('Parameter', () => {
 
       cy.get('.ant-calendar-date-panel')
         .contains('.ant-calendar-date', '15')
+        .click();
+
+      cy.getByTestId('ParameterApplyButton')
         .click();
 
       cy.getByTestId('DynamicTable')
@@ -201,6 +205,9 @@ describe('Parameter', () => {
       cy.get('.ant-calendar-ok-btn')
         .click();
 
+      cy.getByTestId('ParameterApplyButton')
+        .click();
+
       cy.get('.ant-calendar-input').then(($input) => {
         const now = Cypress.moment($input.val(), 'DD/MM/YY HH:mm');
         cy.getByTestId('DynamicTable')
@@ -215,6 +222,9 @@ describe('Parameter', () => {
 
       cy.get('.ant-calendar-date-panel')
         .contains('Now')
+        .click();
+
+      cy.getByTestId('ParameterApplyButton')
         .click();
 
       cy.get('.ant-calendar-input').then(($input) => {
