@@ -302,7 +302,10 @@ class JobResource(BaseResource):
         Retrieve info about a running query job.
         """
         job = QueryTask(job_id=job_id)
-        wait_no = QueryTaskTracker.get_wait_rank(job.id)
+        
+        task = QueryTaskTracker.get_by_task_id(job_id)
+        queue_name = task.data.get('queue_name')
+        wait_no = QueryTaskTracker.get_wait_rank(job.id, queue_name)                  
         return {'job': job.to_dict(), 'wait_no': wait_no}
 
     def delete(self, job_id):
