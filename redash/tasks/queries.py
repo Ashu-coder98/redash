@@ -23,6 +23,112 @@ def _job_lock_id(query_hash, data_source_id):
 
 def _unlock(query_hash, data_source_id):
     redis_connection.delete(_job_lock_id(query_hash, data_source_id))
+    
+    
+    # TODO:
+# There is some duplication between this class and QueryTask, but I wanted to implement the monitoring features without
+# much changes to the existing code, so ended up creating another object. In the future we can merge th
+
+class QueryTaskTracker(object):
+    DONE_LIST = 'query_task_trackers:done'
+    WAITING_LIST = 'query_task_trackers:waiting'
+    IN_PROGRESS_LIST = 'query_task_trackers:in_progress'
+    ALL_LISTS = (DONE_LIST, WAITING_LIST, IN_PROGRESS_LIST)
+    
+    def __init__(self, data):
+        self.data = data
+        
+    @classmethod
+    def create(cls, task_id, state, query_hash, data_source_id, scheduled, metadata):
+        data = dict(task_id=task_id, state=state,
+                    query_hash=query_hash, data_source_id=data_source_id,
+                    scheduled=scheduled,
+                    username=metadata.get('Username', 'unknown'),
+                    query_id=metadata.get('Query ID', 'unknown'),
+                    retries=0,
+                    scheduled_retries=0,
+                    created_at=time.time(),
+                    started_at=None,
+                    run_time=None)
+        return cls(data)
+    
+    def save(self, connection=None):
+        if connection is None:
+            connection = redis_connection
+        self.data['updated_at'] = time.time()
+        key_name = self._key_name(self.data['task_id'])
+        connection.set(key_name, utils.json_dumps(self.data))
+        connection.zadd(self._get_list(), time.time(), key_name)
+        for l in self.ALL_LISTS:
+            if l != self._get_list():
+                connection.zrem(l, key_name)
+                
+                
+    # TOOD: this is not thread/concurrency safe. In current code this is not an issue, but better to fix this.
+    def update(self, **kwargs):
+        self.data.update(kwargs)
+        self.save()
+        
+    @staticmethod
+    def _key_name(task_id):
+        return 'query_task_tracker:{}'.format(task_id)
+    
+    def _get_list(self):
+        if self.state in ('finished', 'failed', 'cancelled'):
+            return self.DONE_LIST
+        if self.state in ('created'):
+            return self.WAITING_LIST
+        return self.IN_PROGRESS_LIST
+    
+    @classmethod
+    def get_by_task_id(cls, task_id, connection=None):
+        if connection is None:
+            connection = redis_connection
+        key_name = cls._key_name(task_id)
+        data = connection.get(key_name)
+        return cls.create_from_data(data)
+    
+    @classmethod
+    def create_from_data(cls, data):
+        if data:
+            data = json.loads(data)
+            return cls(data)
+        return None
+    
+    @classmethod
+    def all(cls, list_name, offset=0, limit=-1):
+        if limit != -1:
+            limit -= 1
+        if offset != 0:
+            offset -= 1
+        ids = redis_connection.zrevrange(list_name, offset, limit)
+        pipe = redis_connection.pipeline()
+        for id in ids:
+            pipe.get(id)
+        tasks = [cls.create_from_data(data) for data in pipe.execute()]
+        return tasks
+    
+    @classmethod
+    def prune(cls, list_name, keep_count, max_keys=100):
+        count = redis_connection.zcard(list_name)
+        if count <= keep_count:
+            return 0
+        remove_count = min(max_keys, count - keep_count)
+        keys = redis_connection.zrange(list_name, 0, remove_count - 1)
+        redis_connection.delete(*keys)
+        redis_connection.zremrangebyrank(list_name, 0, remove_count - 1)
+        return remove_count
+
+    @classmethod
+    def get_wait_rank(cls, hash):
+        return redis_connection.zrank(cls.WAITING_LIST, cls._key_name(hash))
+
+    def __getattr__(self, item):
+        return self.data[item]
+
+    def __contains__(self, item):
+        return item in self.data
+
 
 
 class QueryTask(object):
