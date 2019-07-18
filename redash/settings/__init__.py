@@ -357,3 +357,5 @@ SQLPARSE_FORMAT_OPTIONS = {
     'reindent': parse_boolean(os.environ.get('SQLPARSE_FORMAT_REINDENT', 'true')),
     'keyword_case': os.environ.get('SQLPARSE_FORMAT_KEYWORD_CASE', 'upper'),
 }
+
+QUERY_MAX_AGE_TIME = int(os.environ.get("QUERY_MAX_AGE_TIME", "600"))
