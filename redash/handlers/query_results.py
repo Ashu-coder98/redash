@@ -84,7 +84,7 @@ class QueryResultListResource(BaseResource):
             max_age = -1
         max_age = int(max_age)
         # hack to allow for caching of query results to prevent frequent hits on Db
-        max_age = max(max_age, settings.QUERY_MAX_AGE_TIME)
+        max_age = settings.QUERY_MAX_AGE_TIME if max_age == 0 else max_age
         query_id = params.get('query_id', 'adhoc')
         parameters = params.get('parameters', collect_parameters_from_request(request.args))
 
