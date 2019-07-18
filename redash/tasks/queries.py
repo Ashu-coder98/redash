@@ -39,7 +39,8 @@ class QueryTaskTracker(object):
         self.data = data
         
     @classmethod
-    def create(cls, task_id, state, query_hash, data_source_id, scheduled, metadata):
+    def create(cls, task_id, state, query_hash, data_source_id, scheduled, metadata,
+               queue_name=None):
         data = dict(task_id=task_id, state=state,
                     query_hash=query_hash, data_source_id=data_source_id,
                     scheduled=scheduled,
@@ -49,7 +50,8 @@ class QueryTaskTracker(object):
                     scheduled_retries=0,
                     created_at=time.time(),
                     started_at=None,
-                    run_time=None)
+                    run_time=None,
+                    queue_name=queue_name)
         return cls(data)
     
     def save(self, connection=None):
@@ -108,6 +110,26 @@ class QueryTaskTracker(object):
         tasks = [cls.create_from_data(data) for data in pipe.execute()]
         return tasks
     
+     @classmethod
+    def get_task_rank_by_queue(cls, list_name, task_id, queue_name, offset=0, limit=-1):
+        if limit != -1:
+            limit -= 1
+
+        if offset != 0:
+            offset -= 1
+
+        ids = redis_connection.zrevrange(list_name, offset, limit)
+        pipe = redis_connection.pipeline()
+        rank = 1
+        for data in pipe.execute():
+            task_data = cls.create_from_data(data).data
+            if task_data.get('queue_name') == queue_name:
+                if task_data.get('task_id') == task_id:
+                    return rank
+                else:
+                    rank += 1
+        return rank
+    
     @classmethod
     def prune(cls, list_name, keep_count, max_keys=100):
         count = redis_connection.zcard(list_name)
@@ -120,8 +142,8 @@ class QueryTaskTracker(object):
         return remove_count
 
     @classmethod
-    def get_wait_rank(cls, hash):
-        return redis_connection.zrank(cls.WAITING_LIST, cls._key_name(hash))
+     def get_wait_rank(cls, hash, queue_name):
+        return cls.get_task_rank_by_queue(cls.WAITING_LIST, hash, queue_name)
 
     def __getattr__(self, item):
         return self.data[item]
@@ -251,6 +273,12 @@ def enqueue_query(query, data_source, user_id, is_api_key=False, scheduled_query
                                                    time_limit=time_limit)
 
                 job = QueryTask(async_result=result)
+                tracker = QueryTaskTracker.create(
+                    result.id, 'created', query_hash, data_source.id,
+                    scheduled_query is not None, metadata,
+                    data_source.queue_name)
+                tracker.save(connection=pipe)
+
                 logging.info("[%s] Created new job: %s", query_hash, job.id)
                 pipe.set(_job_lock_id(query_hash, data_source.id), job.id, settings.JOB_EXPIRY_TIME)
                 pipe.execute()
