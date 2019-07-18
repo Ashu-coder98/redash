@@ -49,8 +49,7 @@ def run_query(query, parameters, data_source, query_id, max_age=0):
             "Username": repr(current_user) if current_user.is_api_user() else current_user.email,
             "Query ID": query_id
         })
-        wait_no = QueryTaskTracker.get_wait_rank(job.id)
-        
+        wait_no = QueryTaskTracker.get_wait_rank(job.id, data_source.queue_name)
         return {'job': job.to_dict(), 'wait_no': wait_no
 
 
