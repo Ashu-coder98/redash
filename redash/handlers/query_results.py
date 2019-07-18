@@ -5,6 +5,7 @@ from flask import make_response, request
 from flask_login import current_user
 from flask_restful import abort
 from redash import models, settings
+from redash.tasks import QueryTask, QueryTaskTracker, record_event
 from redash.handlers.base import BaseResource, get_object_or_404
 from redash.permissions import (has_access, not_view_only, require_access,
                                 require_permission, view_only)
@@ -48,7 +49,9 @@ def run_query(query, parameters, data_source, query_id, max_age=0):
             "Username": repr(current_user) if current_user.is_api_user() else current_user.email,
             "Query ID": query_id
         })
-        return {'job': job.to_dict()}
+        wait_no = QueryTaskTracker.get_wait_rank(job.id)
+        
+        return {'job': job.to_dict(), 'wait_no': wait_no
 
 
 def get_download_filename(query_result, query, filetype):
@@ -300,7 +303,8 @@ class JobResource(BaseResource):
         Retrieve info about a running query job.
         """
         job = QueryTask(job_id=job_id)
-        return {'job': job.to_dict()}
+        wait_no = QueryTaskTracker.get_wait_rank(job.id)
+        return {'job': job.to_dict(), 'wait_no': wait_no}
 
     def delete(self, job_id):
         """
