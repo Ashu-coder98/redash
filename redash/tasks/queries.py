@@ -118,8 +118,10 @@ class QueryTaskTracker(object):
         if offset != 0:
             offset -= 1
 
-        ids = redis_connection.zrevrange(list_name, offset, limit)
+        ids = redis_connection.zrange(list_name, offset, limit)
         pipe = redis_connection.pipeline()
+        for id in ids:
+            pipe.get(id)
         rank = 1
         for data in pipe.execute():
             task_data = cls.create_from_data(data).data
