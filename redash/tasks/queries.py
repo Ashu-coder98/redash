@@ -93,6 +93,19 @@ class QueryTask(object):
     def cancel(self):
         return self._async_result.revoke(terminate=True, signal='SIGINT')
 
+    
+def is_enqueued(query_text, data_source_id):
+    query_hash = gen_query_hash(query_text)
+    waiting = QueryTaskTracker.all(QueryTaskTracker.WAITING_LIST)
+    waiting = [t.data for t in waiting if t is not None]
+    in_progress = QueryTaskTracker.all(QueryTaskTracker.IN_PROGRESS_LIST)
+    in_progress = [t.data for t in in_progress if t is not None]
+    if len([q for q in waiting + in_progress
+            if q['query_hash'] == query_hash and q['data_source_id'] == data_source_id]) > 0:
+        return True
+    return False
+
+
 
 def enqueue_query(query, data_source, user_id, is_api_key=False, scheduled_query=None, metadata={}):
     query_hash = gen_query_hash(query)
@@ -195,13 +208,16 @@ def refresh_queries():
                     query_text = mustache_render(query.query_text, query_params)
                 else:
                     query_text = query.query_text
+                    
+                if is_enqueued(query_text, query.data_source.id):
+                    logging.info("Skipping refresh of %s because query is already queued up.", query.id)
+                else:
+                    enqueue_query(query_text, query.data_source, query.user_id,
+                                  scheduled_query=query,
+                                  metadata={'Query ID': query.id, 'Username': 'Scheduled'})
 
-                enqueue_query(query_text, query.data_source, query.user_id,
-                              scheduled_query=query,
-                              metadata={'Query ID': query.id, 'Username': 'Scheduled'})
-
-                query_ids.append(query.id)
-                outdated_queries_count += 1
+                    query_ids.append(query.id)
+                    outdated_queries_count += 1
 
     statsd_client.gauge('manager.outdated_queries', outdated_queries_count)
 
