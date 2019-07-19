@@ -1,0 +1,12 @@
+{% extends "emails/layout.html" %}
+
+{% block content %}
+
+<p class="intercom-align-left" style="line-height: 1.5; margin: 0 0 17px; text-align: left !important" align="left">Hi ,</p>
+<p class="intercom-align-left" style="color: #282F33; font-size: 16px;margin-bottom: 7px; margin-top: 30px; text-align: left !important" align="left">
+  <a href={{ query_link }}>This </a> scheduled query on redash hasn't been updated in some time. It will
+  be removed from schedule in the next {{ days_left }} days. If this query is being actively used, please
+  save the query again to avoid removal from schedule.
+</p>
+
+{% endblock %}
