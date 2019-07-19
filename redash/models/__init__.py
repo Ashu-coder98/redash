@@ -397,6 +397,8 @@ class Query(ChangeTrackingMixin, TimestampMixin, BelongsToOrgMixin, db.Model):
                                                  'description': 'C',
                                                  'query': 'D'}),
                            nullable=True)
+    query_meta_update_ts = Column(db.DateTime(True), default=db.func.now(), server_default=db.func.now(),
+                                  nullable=False)
     tags = Column('tags', MutableList.as_mutable(postgresql.ARRAY(db.Unicode)), nullable=True)
 
     query_class = SearchBaseQuery
@@ -575,6 +577,15 @@ class Query(ChangeTrackingMixin, TimestampMixin, BelongsToOrgMixin, db.Model):
                 outdated_queries[key] = query
 
         return outdated_queries.values()
+    
+
+    @classmethod
+    def scheduled_queries(cls):
+        queries = (db.session.query(Query)
+                   .filter(Query.schedule != None)
+                   .order_by(Query.id))
+        return queries
+
 
     @classmethod
     def search(cls, term, group_ids, user_id=None, include_drafts=False,
@@ -656,6 +667,9 @@ class Query(ChangeTrackingMixin, TimestampMixin, BelongsToOrgMixin, db.Model):
 
         db.session.add(forked_query)
         return forked_query
+    
+    def set_query_meta_update_ts(self):
+        self.query_meta_update_ts = utils.utcnow()
 
     @property
     def runtime(self):
