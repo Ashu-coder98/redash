@@ -3,6 +3,7 @@ import signal
 import time
 
 import redis
+from flask import render_template
 from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
@@ -13,6 +14,7 @@ from redash.query_runner import InterruptException
 from redash.tasks.alerts import check_alerts_for_query
 from redash.utils import gen_query_hash, json_dumps, utcnow, mustache_render
 from redash.worker import celery
+from redash.tasks.general import send_mail
 
 logger = get_task_logger(__name__)
 
