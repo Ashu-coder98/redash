@@ -409,3 +409,27 @@ def execute_query(self, query, data_source_id, metadata, user_id=None,
         scheduled_query = None
     return QueryExecutor(self, query, data_source_id, user_id, is_api_key, metadata,
                          scheduled_query).run()
+
+
+@celery.task(name="redash.tasks.check_expired_schedule_queries")
+def check_expired_schedule_queries():
+    def send_expire_query_schedule_notif(query, days_left):
+        query_link = "{}/queries/{}".format(settings.HOST, query.id)
+        context = dict(query_link=query_link, days_left=days_left)
+        html_content = render_template('emails/expire_query_schedule_notif.html', **context)
+        text_content = render_template('emails/expire_query_schedule_notif.txt', **context)
+        subject = u"Scheduled query review"
+        send_mail.delay([query.user.email, query.last_modified_by.email,
+                         settings.EXPIRE_QUERY_SCHEDULE_NOTIF_EMAIL_RECEIVER], subject, html_content, text_content)
+
+    now = utils.utcnow()
+    try:
+        for query in models.Query.scheduled_queries():
+            days_since_last_updated = (now - query.query_meta_update_ts).days
+            days_to_expire = 60 - days_since_last_updated  # 2months=60 days
+            if days_to_expire in (1, 2):
+                send_expire_query_schedule_notif(query, days_to_expire)
+            elif days_to_expire <= 0:
+                query.schedule = None
+                models.db.session.commit()
+            
