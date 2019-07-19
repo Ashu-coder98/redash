@@ -38,7 +38,11 @@ celery_schedule = {
     'sync_user_details': {
         'task': 'redash.tasks.sync_user_details',
         'schedule': timedelta(minutes=1),
-    }
+    },
+    'check_expired_schedule_queries': {
+        'task': 'redash.tasks.check_expired_schedule_queries',
+        'schedule': timedelta(hours=24)
+    
 }
 
 if settings.VERSION_CHECK:
