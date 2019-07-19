@@ -278,7 +278,7 @@ def enqueue_query(query, data_source, user_id, is_api_key=False, scheduled_query
                 tracker = QueryTaskTracker.create(
                     result.id, 'created', query_hash, data_source.id,
                     scheduled_query is not None, metadata,
-                    data_source.queue_name)
+                    queue_name)
                 tracker.save(connection=pipe)
 
                 logging.info("[%s] Created new job: %s", query_hash, job.id)
