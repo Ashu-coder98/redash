@@ -211,8 +211,9 @@
               <rd-timer class="text-highlight" timestamp="queryResult.getUpdatedAt()"></rd-timer>
                 </div>
                 <div class="alert alert-info m-t-15" ng-if="queryResult.getStatus() == 'waiting'">
-                  Query in queue&hellip;
-                  <rd-timer from="queryResult.getUpdatedAt()"></rd-timer>
+                  Waiting Queue <span class="text-highlight"> {{ queryResult.wait_no }} </span>
+                  Running since
+                  <rd-timer class="text-highlight" timestamp="queryResult.getUpdatedAt()"></rd-timer>
                   <button type="button" class="btn btn-warning btn-xs pull-right" ng-disabled="cancelling" ng-click="cancelExecution()">Cancel
                   </button>
                 </div>
