@@ -341,6 +341,7 @@ class QueryResource(BaseResource):
 
         query_def['last_modified_by'] = self.current_user
         query_def['changed_by'] = self.current_user
+        query.set_query_meta_update_ts()
         # SQLAlchemy handles the case where a concurrent transaction beats us
         # to the update. But we still have to make sure that we're not starting
         # out behind.
