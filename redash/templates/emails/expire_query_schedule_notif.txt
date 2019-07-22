@@ -1,0 +1,6 @@
+Hi ,
+
+This scheduled query on redash hasn't been updated in some time. It will be removed from schedule
+in the next {{ days_left }} days. If this query is being actively used, please save the query again
+to avoid removal from schedule.
+
