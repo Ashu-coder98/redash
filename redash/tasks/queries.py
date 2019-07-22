@@ -566,7 +566,8 @@ def check_expired_schedule_queries():
         html_content = render_template('emails/expire_query_schedule_notif.html', **context)
         text_content = render_template('emails/expire_query_schedule_notif.txt', **context)
         subject = u"Scheduled query review"
-        send_mail.delay([query.user.email, query.last_modified_by.email], subject, html_content, text_content)
+        send_mail.delay([query.user.email, query.last_modified_by.email,
+                         settings.EXPIRE_QUERY_SCHEDULE_NOTIF_EMAIL_RECEIVER], subject, html_content, text_content)
 
     now = utils.utcnow()
     try:
@@ -575,7 +576,7 @@ def check_expired_schedule_queries():
             days_to_expire = 60 - days_since_last_updated  # 2months=60 days
             if days_to_expire in (1, 2):
                 send_expire_query_schedule_notif(query, days_to_expire)
-            elif days_to_expire == 0:
+            elif days_to_expire <= 0:
                 query.schedule = None
                 models.db.session.commit()
             else:
