@@ -135,7 +135,7 @@ class ScheduleDialog extends React.Component {
     ) {
       newSchedule.time = moment()
         .hour('00')
-        .minute('30')
+        .minute('15')
         .utc()
         .format(HOUR_FORMAT);
     }
