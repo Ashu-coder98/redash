@@ -112,7 +112,7 @@ class QueryTaskTracker(object):
         tasks = [cls.create_from_data(data) for data in pipe.execute()]
         return tasks
     
-     @classmethod
+    @classmethod
     def get_task_rank_by_queue(cls, list_name, task_id, queue_name, offset=0, limit=-1):
         if limit != -1:
             limit -= 1
