@@ -146,7 +146,7 @@ class QueryTaskTracker(object):
         return remove_count
 
     @classmethod
-     def get_wait_rank(cls, hash, queue_name):
+    def get_wait_rank(cls, hash, queue_name):
         return cls.get_task_rank_by_queue(cls.WAITING_LIST, hash, queue_name)
 
     def __getattr__(self, item):
