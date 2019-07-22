@@ -35,6 +35,10 @@ celery_schedule = {
         'task': 'redash.tasks.refresh_schemas',
         'schedule': timedelta(minutes=settings.SCHEMAS_REFRESH_SCHEDULE)
     },
+    'check_expired_schedule_queries': {
+        'task': 'redash.tasks.check_expired_schedule_queries',
+        'schedule': timedelta(hours=24)
+    },    
     'sync_user_details': {
         'task': 'redash.tasks.sync_user_details',
         'schedule': timedelta(minutes=1),
