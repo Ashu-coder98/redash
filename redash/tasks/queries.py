@@ -334,12 +334,15 @@ def refresh_queries():
                 else:
                     query_text = query.query_text
 
-                enqueue_query(query_text, query.data_source, query.user_id,
-                              scheduled_query=query,
-                              metadata={'Query ID': query.id, 'Username': 'Scheduled'})
-
-                query_ids.append(query.id)
-                outdated_queries_count += 1
+                if is_enqueued(query_text, query.data_source.id):
+                    logging.info("Skipping refresh of %s because query is already queued up.", query.id)
+                else:
+                    enqueue_query(query_text, query.data_source, query.user_id,
+                                  scheduled_query=query,
+                                  metadata={'Query ID': query.id, 'Username': 'Scheduled'})
+                    
+                    query_ids.append(query.id)
+                    outdated_queries_count += 1
 
     statsd_client.gauge('manager.outdated_queries', outdated_queries_count)
 
